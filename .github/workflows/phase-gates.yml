@@ -1,0 +1,19 @@
+name: phase-gates
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  enforce-milestone-checklist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate milestone checklist in PR body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+          echo "$PR_BODY" | grep -F -- "- [x] M1 Foundation"
+          echo "$PR_BODY" | grep -F -- "- [x] M2 Core Streaming"
+          echo "$PR_BODY" | grep -F -- "- [x] M3 Frontend and Tests"
+          echo "$PR_BODY" | grep -F -- "- [x] M4 Docs and Release"
