@@ -14,8 +14,8 @@ OpenCV is not used.
 
 ## Architecture diagram
 
-- Root image: `/Users/ashishdeshpande/mega-ai/architecture.png`
-- Docs copy: `/Users/ashishdeshpande/mega-ai/docs/architecture.png`
+- Root image: `architecture.png`
+- Docs copy: `docs/architecture.png`
 
 ## API surfaces
 
@@ -56,7 +56,6 @@ See migration:
 ### Run
 
 ```bash
-cd /Users/ashishdeshpande/mega-ai
 docker compose up --build
 ```
 
@@ -76,10 +75,17 @@ docker compose up --build
 
 ## Local development (without Docker)
 
+### Prerequisites
+
+- Python 3.11+
+- Node.js 20+
+- PostgreSQL 15+ running locally
+- Copy `.env.example` to `.env` and set `DATABASE_URL` for your local Postgres instance
+
 ### Backend
 
 ```bash
-cd /Users/ashishdeshpande/mega-ai/backend
+cd backend
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
@@ -91,7 +97,7 @@ uvicorn app.main:app --reload --port 8000
 ### Frontend
 
 ```bash
-cd /Users/ashishdeshpande/mega-ai/frontend
+cd frontend
 npm install
 npm run dev
 ```
@@ -100,7 +106,7 @@ npm run dev
 
 Copy and adjust env values from:
 
-- `/Users/ashishdeshpande/mega-ai/.env.example`
+- `.env.example`
 
 Key controls:
 
@@ -113,40 +119,71 @@ Key controls:
 ## Error handling and no-face behavior
 
 - Unknown session in WS: closes with code `4404`.
+- Too many preview subscribers: closes with code `4409`.
 - Oversized frame or rate-limit breach: structured ingest ack with `error`.
 - No detected face: `detected=false` in ingest ack; ROI insert is skipped.
 - Unknown session for ROI route: `404`.
 
+Ingest ack JSON format:
+
+```json
+{
+  "frame_number": 23,
+  "detected": true,
+  "x_min": 110,
+  "y_min": 80,
+  "x_max": 280,
+  "y_max": 260,
+  "confidence": 0.94,
+  "error": null
+}
+```
+
 ## Security fundamentals included
 
-- Explicit CORS allowlist.
+- Explicit CORS allowlist with limited methods/headers.
 - Request/message limits to protect memory and abuse paths.
 - Per-session frame rate limiting.
 - SQLAlchemy parameterized interactions.
 - Non-root backend container user.
 - `.env` excluded via `.gitignore`.
 
+Current scope limitations (documented for reviewers):
+
+- Session endpoints are unauthenticated and intended for local/dev use.
+- Session IDs are treated as bearer identifiers; deploy behind auth for production use.
+
 ## Testing
 
 Backend tests are under:
 
-- `/Users/ashishdeshpande/mega-ai/backend/tests`
+- `backend/tests`
+
+Frontend tests are under:
+
+- `frontend/src/App.test.tsx`
 
 Run:
 
 ```bash
-cd /Users/ashishdeshpande/mega-ai/backend
+cd backend
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
 pytest -q
 ```
 
+```bash
+cd frontend
+npm install
+npm run test
+```
+
 ## AI collaboration attestation
 
 See:
 
-- `/Users/ashishdeshpande/mega-ai/AI_ATTESTATION.md`
+- `AI_ATTESTATION.md`
 
 ## Notes
 
