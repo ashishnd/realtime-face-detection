@@ -44,7 +44,7 @@ ROI query params:
 
 See migration:
 
-- `/Users/ashishdeshpande/mega-ai/backend/alembic/versions/20260504_0001_initial.py`
+- `backend/alembic/versions/20260504_0001_initial.py`
 
 ## Quick start (5-minute path)
 
