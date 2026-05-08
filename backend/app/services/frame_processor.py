@@ -1,16 +1,14 @@
 from io import BytesIO
 
-import numpy as np
 from PIL import Image, ImageDraw
 
 from app.services.face_detector import FaceBox
 
 
-def jpeg_to_rgb(jpeg_bytes: bytes) -> tuple[np.ndarray, int, int]:
+def jpeg_to_rgb(jpeg_bytes: bytes) -> tuple[Image.Image, int, int]:
     im = Image.open(BytesIO(jpeg_bytes)).convert("RGB")
     w, h = im.size
-    arr = np.asarray(im, dtype=np.uint8)
-    return arr, w, h
+    return im, w, h
 
 
 def clamp_int_box(x_min: float, y_min: float, x_max: float, y_max: float, width: int, height: int) -> tuple[int, int, int, int]:
@@ -25,8 +23,8 @@ def clamp_int_box(x_min: float, y_min: float, x_max: float, y_max: float, width:
     return xi0, yi0, xi1, yi1
 
 
-def draw_box_on_rgb(rgb: np.ndarray, x0: int, y0: int, x1: int, y1: int) -> bytes:
-    im = Image.fromarray(rgb, mode="RGB")
+def draw_box_on_rgb(image: Image.Image, x0: int, y0: int, x1: int, y1: int) -> bytes:
+    im = image.copy()
     draw = ImageDraw.Draw(im)
     draw.rectangle([x0, y0, x1, y1], outline=(0, 255, 0), width=3)
     buf = BytesIO()

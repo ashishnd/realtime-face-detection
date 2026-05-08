@@ -1,6 +1,5 @@
 import io
 
-import numpy as np
 from PIL import Image
 
 from app.services import frame_processor
@@ -33,5 +32,5 @@ def test_jpeg_to_rgb():
     im.save(buf, format="JPEG")
     rgb, w, h = frame_processor.jpeg_to_rgb(buf.getvalue())
     assert w == 10 and h == 12
-    assert rgb.shape == (12, 10, 3)
-    assert rgb.dtype == np.uint8
+    assert rgb.mode == "RGB"
+    assert rgb.size == (10, 12)

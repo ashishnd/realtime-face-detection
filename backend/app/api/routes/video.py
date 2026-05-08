@@ -92,8 +92,12 @@ async def ws_preview(session_id: uuid.UUID, websocket: WebSocket) -> None:
             message = await websocket.receive()
             if message.get("type") == "websocket.disconnect":
                 break
+    except RuntimeError as exc:
+        await websocket.close(code=4409, reason=str(exc))
     except WebSocketDisconnect:
         pass
+    except Exception:
+        await websocket.close(code=1011, reason="Preview stream failed")
     finally:
         await vm.unregister_preview(session_id, websocket)
 
