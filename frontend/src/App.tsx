@@ -47,6 +47,7 @@ export function App() {
   const [lastAck, setLastAck] = useState<string>("");
   const [roi, setRoi] = useState<RoiResponse | null>(null);
   const [error, setError] = useState<string>("");
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
   const refreshRoi = useCallback(async (sessionId: string) => {
     const res = await fetch(httpUrl(`/sessions/${sessionId}/roi?limit=20`));
@@ -87,8 +88,7 @@ export function App() {
       URL.revokeObjectURL(previewUrlRef.current);
       previewUrlRef.current = null;
     }
-    const img = document.getElementById("previewImg") as HTMLImageElement | null;
-    if (img) img.removeAttribute("src");
+    setPreviewUrl("");
 
     setRunning(false);
   }, []);
@@ -123,8 +123,7 @@ export function App() {
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
       const url = URL.createObjectURL(blob);
       previewUrlRef.current = url;
-      const img = document.getElementById("previewImg") as HTMLImageElement | null;
-      if (img) img.src = url;
+      setPreviewUrl(url);
     });
 
     ingest.addEventListener("message", (ev) => {
@@ -207,10 +206,15 @@ export function App() {
           <h2>Camera</h2>
           <video ref={videoRef} playsInline muted />
           <canvas ref={canvasRef} style={{ display: "none" }} />
+          {!running ? <p className="placeholder">Create a session, then start camera streaming.</p> : null}
         </div>
         <div className="panel">
           <h2>Processed feed (WebSocket preview)</h2>
-          <img id="previewImg" alt="processed preview" />
+          {previewUrl ? (
+            <img alt="processed preview" src={previewUrl} />
+          ) : (
+            <div className="placeholder preview-placeholder">Processed stream will appear here.</div>
+          )}
         </div>
       </div>
 

@@ -39,6 +39,15 @@ img {
   background: #0b1220;
 }
 
+video {
+  min-height: 180px;
+}
+
+img {
+  min-height: 180px;
+  object-fit: cover;
+}
+
 .row {
   display: flex;
   gap: 8px;
@@ -76,4 +85,20 @@ pre {
 .error {
   color: #b91c1c;
   font-size: 13px;
+}
+
+.placeholder {
+  margin-top: 8px;
+  color: #475569;
+  font-size: 13px;
+}
+
+.preview-placeholder {
+  min-height: 180px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
 }
