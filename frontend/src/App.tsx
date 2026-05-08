@@ -41,6 +41,10 @@ export function App() {
   const sendIntervalRef = useRef<number | null>(null);
   const roiIntervalRef = useRef<number | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  const reconnectTimerRef = useRef<number | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const reconnectPendingRef = useRef(false);
+  const reconnectEnabledRef = useRef(false);
 
   const [session, setSession] = useState<Session | null>(null);
   const [running, setRunning] = useState(false);
@@ -48,6 +52,7 @@ export function App() {
   const [roi, setRoi] = useState<RoiResponse | null>(null);
   const [error, setError] = useState<string>("");
   const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [statusText, setStatusText] = useState<string>("Idle");
 
   const refreshRoi = useCallback(async (sessionId: string) => {
     const res = await fetch(httpUrl(`/sessions/${sessionId}/roi?limit=20`));
@@ -68,6 +73,13 @@ export function App() {
   };
 
   const stopStreams = useCallback(() => {
+    reconnectEnabledRef.current = false;
+    reconnectPendingRef.current = false;
+    reconnectAttemptsRef.current = 0;
+    if (reconnectTimerRef.current) {
+      window.clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
     if (sendIntervalRef.current) {
       window.clearInterval(sendIntervalRef.current);
       sendIntervalRef.current = null;
@@ -91,12 +103,15 @@ export function App() {
     setPreviewUrl("");
 
     setRunning(false);
+    setStatusText("Stopped");
   }, []);
 
   const startCamera = useCallback(async () => {
     if (!session) return;
     setError("");
+    setStatusText("Initializing camera...");
     stopStreams();
+    reconnectEnabledRef.current = true;
 
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
     mediaStreamRef.current = stream;
@@ -107,6 +122,7 @@ export function App() {
       setError("Missing video/canvas elements");
       return;
     }
+    setStatusText("Connecting streams...");
     video.srcObject = stream;
     await video.play();
 
@@ -115,6 +131,20 @@ export function App() {
 
     ingestRef.current = ingest;
     previewRef.current = preview;
+
+    const scheduleReconnect = (reason: string) => {
+      if (!reconnectEnabledRef.current || !session || reconnectPendingRef.current) return;
+      reconnectPendingRef.current = true;
+      const attempt = reconnectAttemptsRef.current + 1;
+      reconnectAttemptsRef.current = attempt;
+      const delayMs = Math.min(1000 * 2 ** (attempt - 1), 5000);
+      setStatusText(`Reconnecting in ${Math.round(delayMs / 1000)}s...`);
+      setError(reason);
+      reconnectTimerRef.current = window.setTimeout(() => {
+        reconnectPendingRef.current = false;
+        void startCamera().catch((e: unknown) => setError(String(e)));
+      }, delayMs);
+    };
 
     preview.binaryType = "blob";
     preview.addEventListener("message", (ev) => {
@@ -132,6 +162,12 @@ export function App() {
 
     ingest.addEventListener("error", () => setError("Ingest WebSocket error"));
     preview.addEventListener("error", () => setError("Preview WebSocket error"));
+    ingest.addEventListener("close", (ev) => {
+      if (ev.code !== 1000) scheduleReconnect(`Ingest stream closed (${ev.code})`);
+    });
+    preview.addEventListener("close", (ev) => {
+      if (ev.code !== 1000) scheduleReconnect(`Preview stream closed (${ev.code})`);
+    });
 
     await new Promise<void>((resolve, reject) => {
       let opened = 0;
@@ -147,6 +183,8 @@ export function App() {
     });
 
     setRunning(true);
+    reconnectAttemptsRef.current = 0;
+    setStatusText("Streaming");
 
     const sendFrame = () => {
       const v = videoRef.current;
@@ -194,6 +232,7 @@ export function App() {
         </button>
       </div>
       {error ? <div className="error">{error}</div> : null}
+      <div className="placeholder">Status: {statusText}</div>
       {session ? (
         <div className="panel" style={{ marginTop: 12 }}>
           <h2>Session</h2>

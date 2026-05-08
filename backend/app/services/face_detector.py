@@ -2,8 +2,6 @@ from dataclasses import dataclass
 from threading import Lock
 from typing import Any
 
-import numpy as np
-
 
 @dataclass(frozen=True)
 class FaceBox:
@@ -36,11 +34,17 @@ class FaceDetector:
             min_detection_confidence=0.5,
         )
 
-    def detect(self, rgb: np.ndarray) -> FaceBox | None:
-        """rgb: HxWx3 uint8 RGB. Returns first detected face or None."""
-        if rgb.ndim != 3 or rgb.shape[2] != 3:
+    def detect(self, rgb: Any) -> FaceBox | None:
+        """rgb: HxWx3 uint8 RGB-like object. Returns first detected face or None."""
+        try:
+            import numpy as np  # type: ignore
+        except Exception:
             return None
-        h, w = rgb.shape[0], rgb.shape[1]
+
+        arr = rgb if isinstance(rgb, np.ndarray) else np.asarray(rgb, dtype=np.uint8)
+        if arr.ndim != 3 or arr.shape[2] != 3:
+            return None
+        h, w = arr.shape[0], arr.shape[1]
         if h == 0 or w == 0:
             return None
 
@@ -49,7 +53,7 @@ class FaceDetector:
             if not self._enabled or self._mp_fd is None:
                 return None
 
-            res = self._mp_fd.process(rgb)  # type: ignore[union-attr]
+            res = self._mp_fd.process(arr)  # type: ignore[union-attr]
             if not res.detections:
                 return None
 

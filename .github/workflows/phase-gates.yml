@@ -3,6 +3,7 @@ name: phase-gates
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, edited]
 
 jobs:
   enforce-milestone-checklist:
@@ -13,7 +14,19 @@ jobs:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           set -euo pipefail
-          echo "$PR_BODY" | grep -F -- "- [x] M1 Foundation"
-          echo "$PR_BODY" | grep -F -- "- [x] M2 Core Streaming"
-          echo "$PR_BODY" | grep -F -- "- [x] M3 Frontend and Tests"
-          echo "$PR_BODY" | grep -F -- "- [x] M4 Docs and Release"
+          echo "$PR_BODY" | grep -F -- "- [x] M1 Foundation" >/dev/null || {
+            echo "Missing checked box: M1 Foundation"
+            exit 1
+          }
+          echo "$PR_BODY" | grep -F -- "- [x] M2 Core Streaming" >/dev/null || {
+            echo "Missing checked box: M2 Core Streaming"
+            exit 1
+          }
+          echo "$PR_BODY" | grep -F -- "- [x] M3 Frontend and Tests" >/dev/null || {
+            echo "Missing checked box: M3 Frontend and Tests"
+            exit 1
+          }
+          echo "$PR_BODY" | grep -F -- "- [x] M4 Docs and Release" >/dev/null || {
+            echo "Missing checked box: M4 Docs and Release"
+            exit 1
+          }
